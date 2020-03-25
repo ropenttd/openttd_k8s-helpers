@@ -109,8 +109,8 @@ func main() {
 		fmt.Println("Usage:", os.Args[0], "openttd.cfg", "bans.txt")
 		os.Exit(1)
 	}
-	configFile := os.Args[2]
-	banFile := os.Args[3]
+	configFile := os.Args[1]
+	banFile := os.Args[2]
 	cfg, err := ini.Load(configFile)
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
