@@ -105,14 +105,20 @@ func mergeBanListToConfig(banFile string, cfg *ini.File) error {
 
 // main
 func main() {
-	cfg, err := ini.Load("openttd.cfg")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage:", os.Args[0], "openttd.cfg", "bans.txt")
+		os.Exit(1)
+	}
+	configFile := os.Args[2]
+	banFile := os.Args[3]
+	cfg, err := ini.Load(configFile)
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
 		os.Exit(1)
 	}
 
-	mergeBanListToConfig("bans.txt", cfg)
+	mergeBanListToConfig(banFile, cfg)
 
-	cfg.SaveTo("openttd.cfg")
+	cfg.SaveTo(configFile)
 
 }
