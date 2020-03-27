@@ -12,7 +12,7 @@ This container will regularly poll the openttd.cfg mounted at `/config/openttd.c
 
 ## Using the Sidecar Container
 ```
-docker run -d -v /home/{username}/.openttd:/config:rw redditopenttd/openttd-bans-sidecar:latest
+docker run -d -v /home/{username}/.openttd:/config:rw redditopenttd/bans-sidecar:latest
 ```
 
 Please ensure that the directory mounted at /config is the same one that is mounted in your main OpenTTD container (the script polls /config/openttd.cfg for data).

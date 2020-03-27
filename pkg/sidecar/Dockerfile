@@ -12,7 +12,7 @@ COPY . .
 RUN go get -d -v
 
 # Build the binary
-RUN go build -o /go/bin/banrunner
+RUN go build -o /go/bin/sidecar
 
 # END BUILD ENVIRONMENT
 # DEPLOY ENVIRONMENT
