@@ -27,4 +27,4 @@ VOLUME /config
 
 # Finally, let's run the script!
 USER openttd
-CMD /usr/local/bin/banrunner
+ENTRYPOINT ["/usr/local/bin/banrunner"]

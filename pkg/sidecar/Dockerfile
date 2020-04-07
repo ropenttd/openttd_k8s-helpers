@@ -24,7 +24,7 @@ MAINTAINER duck. <me@duck.me.uk>
 COPY --from=builder /go/bin/sidecar /usr/local/bin/sidecar
 
 VOLUME /config
+WORKDIR /config
 
 # Finally, let's run the script!
-USER openttd
-CMD /usr/local/bin/banrunner
+ENTRYPOINT ["/usr/local/bin/sidecar"]

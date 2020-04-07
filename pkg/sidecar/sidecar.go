@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-
 	"gopkg.in/ini.v1"
 )
 
@@ -82,8 +81,8 @@ func writeBanList(targetFile string, banList *[]string) error {
 	return nil
 }
 
-// main
-func main() {
+
+func parseAndWrite() {
 	cfg, err := ini.Load("openttd.cfg")
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
@@ -99,5 +98,13 @@ func main() {
 	fmt.Println("Ban List:", mergeArrays(&banned_clients))
 
 	writeBanList("bans.txt", &banned_clients)
+}
 
+// main
+func main() {
+	fmt.Println("Sidecar is running")
+	parseAndWrite()
+	for range time.Tick(1 * time.Minute) {
+			parseAndWrite()
+	}
 }
