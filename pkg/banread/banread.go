@@ -1,13 +1,12 @@
-package main
+package banread
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/ini.v1"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
-
-	"gopkg.in/ini.v1"
 )
 
 // mergeArrays is an internal function that takes several arrays and merges them into one array,
@@ -46,26 +45,25 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func readFileToArray(fileName string) (data []string) {
-	fileBytes, err := ioutil.ReadFile(fileName)
+func readFileToArray(fileName *string) (data []string) {
+	fileBytes, err := ioutil.ReadFile(*fileName)
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 
 	return strings.Split(string(fileBytes), "\n")
 }
 
-func mergeBanListToConfig(banFile string, cfg *ini.File) error {
+func MergeBanListToConfig(banFile *string, cfg *ini.File) error {
 	// take a file mutex lock against the ban file
 	// this is just in case a server is rebooting and reading the ban list in
 
-	lockFileName := banFile + ".lock"
+	lockFileName := *banFile + ".lock"
 
 	for {
 		if fileExists(lockFileName) {
-			fmt.Println("Ban list is locked by another process: waiting for the lock to be released...")
+			log.Warnln("Ban list is locked by another process: waiting for the lock to be released...")
 		} else {
 			break
 		}
@@ -81,14 +79,14 @@ func mergeBanListToConfig(banFile string, cfg *ini.File) error {
 
 	// Get the list of banned clients that are defined in the config file
 	// this catches any clients that are banned in our config but not the global one
-	var banned_clients []string
+	var bannedClients []string
 
-	banned_clients = append(cfg.Section("bans").KeyStrings())
+	bannedClients = append(cfg.Section("bans").KeyStrings())
 
 	// Then get the bans in the global ban config file
 	bans := readFileToArray(banFile)
 
-	banList := mergeArrays(&banned_clients, &bans)
+	banList := mergeArrays(&bannedClients, &bans)
 
 	// Now we have a list of bans, overwrite the ones in the config
 	// we could do this by iterating the list, but it's easier just to make a new one
@@ -101,24 +99,4 @@ func mergeBanListToConfig(banFile string, cfg *ini.File) error {
 	}
 
 	return nil
-}
-
-// main
-func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage:", os.Args[0], "openttd.cfg", "bans.txt")
-		os.Exit(1)
-	}
-	configFile := os.Args[1]
-	banFile := os.Args[2]
-	cfg, err := ini.Load(configFile)
-	if err != nil {
-		fmt.Printf("Fail to read file: %v", err)
-		os.Exit(1)
-	}
-
-	mergeBanListToConfig(banFile, cfg)
-
-	cfg.SaveTo(configFile)
-
 }

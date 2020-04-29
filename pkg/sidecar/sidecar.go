@@ -1,10 +1,11 @@
-package main
+package sidecar
 
 import (
-	"fmt"
+	"gopkg.in/ini.v1"
 	"os"
 	"time"
-	"gopkg.in/ini.v1"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // mergeArrays is an internal function that takes several arrays and merges them into one array,
@@ -51,7 +52,7 @@ func writeBanList(targetFile string, banList *[]string) error {
 
 	for {
 		if fileExists(lockFileName) {
-			fmt.Println("Ban list is locked by another process: waiting for the lock to be released...")
+			log.Warnln("Ban list is locked by another process: waiting for the lock to be released...")
 		} else {
 			break
 		}
@@ -81,30 +82,19 @@ func writeBanList(targetFile string, banList *[]string) error {
 	return nil
 }
 
-
-func parseAndWrite() {
+func ParseAndWrite() {
 	cfg, err := ini.Load("openttd.cfg")
 	if err != nil {
-		fmt.Printf("Fail to read file: %v", err)
-		os.Exit(1)
+		log.Fatalf("Fail to read file: %v", err)
 	}
 
 	var banned_clients []string
 
-	fmt.Println("Reading the bans from the config of server:", cfg.Section("network").Key("server_name").String())
+	log.Infoln("Reading the bans from the config of server:", cfg.Section("network").Key("server_name").String())
 	banned_clients = append(cfg.Section("bans").KeyStrings())
 	// We use mergeArrays because it should allow for functionality later on to read bans from multiple servers
 	// and then merge them into one master list
-	fmt.Println("Ban List:", mergeArrays(&banned_clients))
+	log.Infoln("Ban List:", mergeArrays(&banned_clients))
 
 	writeBanList("bans.txt", &banned_clients)
-}
-
-// main
-func main() {
-	fmt.Println("Sidecar is running")
-	parseAndWrite()
-	for range time.Tick(1 * time.Minute) {
-			parseAndWrite()
-	}
 }

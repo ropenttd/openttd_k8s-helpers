@@ -1,4 +1,4 @@
-package main
+package bananasync
 
 import (
 	"compress/gzip"
@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var newgrfPath = "content_download/opengrf/"
+var contentPath = "content_download/newgrf/"
 
 // fileExists checks if a file exists and is not a directory before we
 // try using it to prevent further errors.
@@ -26,10 +26,19 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func downloadGrfGZ(id string, hash string, grfname string) (err error) {
+func downloadGrfGZ(id string, hash string, grfname string, path string) (err error) {
 	downloadUrl := fmt.Sprintf("https://bananas.cdn.openttd.org/newgrf/%s/%s/%s.tar.gz", strings.ToLower(id), strings.ToLower(hash), grfname)
+	req, err := http.NewRequest("GET", downloadUrl, nil)
+	if err != nil {
+		return err
+	}
+
+	// we could just do http.Get but we want to set a User-Agent so this slightly more convoluted way is needed
+	req.Header.Set("User-Agent", "BaNaNaSync/1.0")
+	client := &http.Client{}
+
 	// Get the data
-	resp, err := http.Get(downloadUrl)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -40,7 +49,7 @@ func downloadGrfGZ(id string, hash string, grfname string) (err error) {
 	}
 
 	// Create the file
-	out, err := os.Create(fmt.Sprint(newgrfPath, grfname, ".tar"))
+	out, err := os.Create(fmt.Sprint(path, grfname, ".tar"))
 	if err != nil {
 		return err
 	}
@@ -57,56 +66,40 @@ func downloadGrfGZ(id string, hash string, grfname string) (err error) {
 	return err
 }
 
-func processGrf(id string, hash string, grfname string, wg *sync.WaitGroup) {
+func processGrf(id string, hash string, grfname string, path string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Debugf("Processing %s", grfname)
-	fqPathName := fmt.Sprint(newgrfPath, grfname, ".tar")
+	fqPathName := fmt.Sprint(path, grfname, ".tar")
 	if fileExists(fqPathName) {
 		log.Debugf("✅ newgrf %s available, nothing to download", grfname)
 		return
 	}
 	// File doesn't exist
 	log.Infof("⬇️ newgrf %s is not available, downloading", grfname)
-	err := downloadGrfGZ(id, hash, grfname)
+	err := downloadGrfGZ(id, hash, grfname, path)
 	if err != nil {
 		log.Errorf("💥 Problem downloading %s from BaNaNaS: %s", grfname, err)
 	} else {
 		log.Infof("✅ Successfully downloaded %s", grfname)
 	}
-
+	log.Debugf("✅ newgrf %s is available, not downloading", grfname)
 	return
 
 }
 
-func parseAndDispatch(cfg ini.File) {
+func ParseAndDispatch(cfg *ini.File, toPath *string) {
 	var wg sync.WaitGroup
 	log.Info("👀 Reading the GRFs from the config of server: ", cfg.Section("network").Key("server_name").String())
 
+	path := fmt.Sprint(*toPath, "/", contentPath)
 	for _, v := range cfg.Section("newgrf").Keys() {
 		grfData := strings.Split(v.Name(), "|")
 		grfNameInfo := strings.Split(grfData[2], "/")
 		wg.Add(1)
-		go processGrf(grfData[0], grfData[1], grfNameInfo[0], &wg)
+		go processGrf(grfData[0], grfData[1], grfNameInfo[0], path, &wg)
 	}
 
 	wg.Wait()
 
 	log.Info("🙌 GRFs synchronised")
-}
-
-// main
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage:", os.Args[0], "openttd.cfg")
-		os.Exit(1)
-	}
-	configFile := os.Args[1]
-	config, err := ini.Load(configFile)
-	if err != nil {
-		log.Fatalf("Fail to read file: %v", err)
-	}
-
-	os.MkdirAll(newgrfPath, os.ModePerm)
-
-	parseAndDispatch(*config)
 }
