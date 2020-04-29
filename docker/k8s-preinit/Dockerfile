@@ -4,7 +4,7 @@ FROM golang:alpine AS builder
 
 # Install git.
 # Git is required for fetching the dependencies.
-RUN apk update && apk add --no-cache git
+RUN apk update && apk add --no-cache git ca-certificates
 WORKDIR $GOPATH/src/github.com/ropenttd/openttd_k8s-helpers
 
 COPY ./go.mod .
@@ -27,6 +27,8 @@ MAINTAINER duck. <me@duck.me.uk>
 
 # Copy the executable
 COPY --from=builder /go/bin/preinit /preinit
+# and the ca-certificates
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 VOLUME /config
 WORKDIR /config
