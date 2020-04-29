@@ -1,7 +1,6 @@
 package banread
 
 import (
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/ini.v1"
 	"io/ioutil"
 	"os"
@@ -34,14 +33,14 @@ func mergeArrays(arrays ...*[]string) (result []string) {
 	return result
 }
 
-func readFileToArray(fileName *string) (data []string) {
+func readFileToArray(fileName *string) (data []string, err error) {
 	fileBytes, err := ioutil.ReadFile(*fileName)
 
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
-	return strings.Split(string(fileBytes), "\n")
+	return strings.Split(string(fileBytes), "\n"), nil
 }
 
 func MergeBanListToConfig(banFile *string, cfg *ini.File) error {
@@ -57,7 +56,10 @@ func MergeBanListToConfig(banFile *string, cfg *ini.File) error {
 	bannedClients = append(cfg.Section("bans").KeyStrings())
 
 	// Then get the bans in the global ban config file
-	bans := readFileToArray(banFile)
+	bans, err := readFileToArray(banFile)
+	if err != nil {
+		return err
+	}
 
 	banList := mergeArrays(&bannedClients, &bans)
 

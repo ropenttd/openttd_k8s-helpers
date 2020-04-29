@@ -36,7 +36,8 @@ func main() {
 
 	if *mergeBans != "" {
 		log.Info("⛔️ Merging bans")
-		banread.MergeBanListToConfig(mergeBans, cfg)
+		// Ignore any errors from this
+		_ = banread.MergeBanListToConfig(mergeBans, cfg)
 	}
 
 	if *syncGrfs {
@@ -54,5 +55,8 @@ func main() {
 	}
 
 	log.Info("✅ Work done, saving writable config to ", *destPath, "/openttd.cfg")
-	cfg.SaveTo(fmt.Sprint(*destPath, "/openttd.cfg"))
+	err = cfg.SaveTo(fmt.Sprint(*destPath, "/openttd.cfg"))
+	if err != nil {
+		log.Fatal(err)
+	}
 }

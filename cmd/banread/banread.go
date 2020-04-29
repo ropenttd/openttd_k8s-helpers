@@ -19,7 +19,13 @@ func main() {
 		log.Fatalf("Fail to read file: %v", err)
 	}
 
-	banread.MergeBanListToConfig(&banFile, cfg)
+	err = banread.MergeBanListToConfig(&banFile, cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	cfg.SaveTo(configFile)
+	err = cfg.SaveTo(configFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
