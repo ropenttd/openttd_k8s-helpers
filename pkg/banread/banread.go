@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"time"
 )
 
 // mergeArrays is an internal function that takes several arrays and merges them into one array,
@@ -35,16 +34,6 @@ func mergeArrays(arrays ...*[]string) (result []string) {
 	return result
 }
 
-// fileExists checks if a file exists and is not a directory before we
-// try using it to prevent further errors.
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
 func readFileToArray(fileName *string) (data []string) {
 	fileBytes, err := ioutil.ReadFile(*fileName)
 
@@ -56,26 +45,10 @@ func readFileToArray(fileName *string) (data []string) {
 }
 
 func MergeBanListToConfig(banFile *string, cfg *ini.File) error {
-	// take a file mutex lock against the ban file
-	// this is just in case a server is rebooting and reading the ban list in
+	// we release any lock against the ban file because this is designed to run during init
 
 	lockFileName := *banFile + ".lock"
-
-	for {
-		if fileExists(lockFileName) {
-			log.Warnln("Ban list is locked by another process: waiting for the lock to be released...")
-		} else {
-			break
-		}
-		time.Sleep(2 * time.Second)
-	}
-
-	lock, err := os.Create(lockFileName)
-	if err != nil {
-		return err
-	}
-	defer lock.Close()
-	defer os.Remove(lockFileName)
+	os.Remove(lockFileName)
 
 	// Get the list of banned clients that are defined in the config file
 	// this catches any clients that are banned in our config but not the global one
@@ -93,7 +66,7 @@ func MergeBanListToConfig(banFile *string, cfg *ini.File) error {
 	cfg.DeleteSection("bans")
 	cfg.NewSection("bans")
 	for _, line := range banList {
-		if _, err = cfg.Section("bans").NewKey(line, ""); err != nil {
+		if _, err := cfg.Section("bans").NewKey(line, ""); err != nil {
 			return err
 		}
 	}
