@@ -1,4 +1,4 @@
-package preinit
+package main
 
 import (
 	"flag"
